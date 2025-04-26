@@ -1,0 +1,21 @@
+# Node modules
+**/node_modules
+
+# Build outputs
+**/dist
+**/.expo
+**/.expo-shared
+**/build
+
+# Environment variables
+**/.env
+**/.env.local
+**/.env.production
+
+# IDE config files
+.vscode/
+.idea/
+
+# OS system files
+.DS_Store
+Thumbs.db
