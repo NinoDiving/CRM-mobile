@@ -1,11 +1,11 @@
 # Node modules
-**/node_modules
+**/node_modules/
 
 # Build outputs
-**/dist
-**/.expo
-**/.expo-shared
-**/build
+**/dist/
+**/.expo/
+**/.expo-shared/
+**/build/
 
 # Environment variables
 **/.env
@@ -19,3 +19,10 @@
 # OS system files
 .DS_Store
 Thumbs.db
+
+# Ne pas ignorer les fichiers de configuration importants
+!**/package.json
+!**/package-lock.json
+!**/tsconfig.json
+!**/*.config.js
+!**/*.config.ts
