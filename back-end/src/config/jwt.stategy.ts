@@ -1,0 +1,47 @@
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport/dist/passport/passport.strategy';
+
+import { Request } from 'express';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+
+interface RequestWithCookies extends Request {
+  cookies: {
+    token?: string;
+  };
+}
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor() {
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+
+    super({
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request: RequestWithCookies) => {
+          const token = request?.cookies?.token;
+          return token as string;
+        },
+      ]),
+      ignoreExpiration: false,
+      secretOrKey: process.env.JWT_SECRET,
+    });
+  }
+
+  validate(payload: {
+    id: string;
+    email: string;
+    lastname: string;
+    firstname: string;
+    role: string;
+  }) {
+    return {
+      id: payload.id,
+      email: payload.email,
+      lastname: payload.lastname,
+      firstname: payload.firstname,
+      role: payload.role,
+    };
+  }
+}
