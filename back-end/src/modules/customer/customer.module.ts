@@ -5,6 +5,7 @@ import { CustomerController } from './customer.controller';
 import { CustomerService } from './customer.service';
 import { VerifyToken } from 'src/middleware/verifyToken';
 import { JwtModule } from '@nestjs/jwt';
+import { AdminAuthorisation } from 'src/middleware/adminAuthorisation';
 
 @Module({
   imports: [
@@ -21,8 +22,12 @@ import { JwtModule } from '@nestjs/jwt';
 })
 export class CustomerModule {
   configure(consumer: MiddlewareConsumer) {
+    const blockedRoutes = ['customer', 'employee'];
     consumer
       .apply(VerifyToken)
+      .forRoutes({ path: blockedRoutes.join(','), method: RequestMethod.POST });
+    consumer
+      .apply(AdminAuthorisation)
       .forRoutes({ path: 'customer', method: RequestMethod.POST });
   }
 }

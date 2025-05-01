@@ -4,43 +4,31 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Request, Response, NextFunction } from 'express';
-
-type JwtPayload = {
-  id: string;
-  email: string;
-  lastname: string;
-  firstname: string;
-  role: string;
-};
-
-// Déclarer l'extension de Request pour les cookies
-
-interface RequestWithToken extends Request {
-  cookies: {
-    token?: string;
-  };
-  user?: JwtPayload;
-}
+import { Response, NextFunction } from 'express';
+import { JwtPayload } from 'src/types/jwt/payload';
+import { RequestWithUser } from 'src/types/employee/employee';
 
 @Injectable()
 export class VerifyToken implements NestMiddleware {
   constructor(private readonly jwtService: JwtService) {}
 
-  use(req: RequestWithToken, res: Response, next: NextFunction) {
+  use(req: RequestWithUser, res: Response, next: NextFunction) {
     try {
-      const token = req.cookies?.token;
+      const authHeader = req.headers.authorization;
 
-      if (!token) {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new UnauthorizedException('Token non fourni');
       }
 
+      const token = authHeader.split(' ')[1];
       const decoded = this.jwtService.verify<JwtPayload>(token);
+
       req.user = decoded;
 
       next();
     } catch (error) {
-      throw new UnauthorizedException('Token invalide', { cause: error });
+      console.log('Token error:', error);
+      throw new UnauthorizedException('Token invalide');
     }
   }
 }

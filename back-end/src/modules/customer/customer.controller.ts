@@ -15,4 +15,6 @@ export class CustomerController {
   getCustomers() {
     return this.customerService.getCustomers();
   }
+
+  @Get('name')
 }
