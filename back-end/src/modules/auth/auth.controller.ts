@@ -21,6 +21,6 @@ export class AuthController {
     const { access_token } = await this.authService.login(employee);
 
     console.log(access_token);
-    return { message: 'Logged in successfully' };
+    return { access_token, employee, message: 'Logged in successfully' };
   }
 }

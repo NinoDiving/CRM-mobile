@@ -12,4 +12,17 @@ export class EmployeeService {
   async findAll(): Promise<Employee[]> {
     return this.employeeModel.find().exec();
   }
+
+  async findByName(name: string) {
+    const regex = new RegExp(name, 'i');
+    return this.employeeModel
+      .find({
+        $or: [
+          { firstname: { $regex: regex } },
+          { lastname: { $regex: regex } },
+        ],
+      })
+      .select('-password')
+      .exec();
+  }
 }

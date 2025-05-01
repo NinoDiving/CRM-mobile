@@ -1,4 +1,4 @@
-import { IsEmail, IsString } from 'class-validator';
+import { IsEmail, IsMongoId, IsString } from 'class-validator';
 
 export class CustomerDto {
   @IsString()
@@ -24,4 +24,7 @@ export class CustomerDto {
 
   @IsString()
   longitude: string;
+
+  @IsMongoId()
+  employeeAffected: string;
 }
