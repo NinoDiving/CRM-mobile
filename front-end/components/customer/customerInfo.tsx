@@ -1,13 +1,35 @@
-import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { fetchCustomerById } from "@/service/customer/fetchCustomer";
+
+import { AuthService } from "@/service/auth/auth.service";
+import { getCurrentLocation } from "@/service/localisation/localisation";
+import { getAllVisits, getVisitById } from "@/service/visit/visit";
 import { Customer } from "@/types/customer/customer";
+
+import Constants from "expo-constants";
+import { router } from "expo-router";
 
 export default function CustomerInfo({ id }: { id: string }) {
   const [customer, setCustomer] = useState<Customer>();
   const [loading, setLoading] = useState(true);
+  const [employeeId, setEmployeeId] = useState<string>();
+  const [visit, setVisit] = useState();
+  useEffect(() => {
+    const getEmployeeId = async () => {
+      try {
+        const userData = await AuthService.getUserData();
+        setEmployeeId(userData.id);
+      } catch (error) {
+        console.error(
+          "Erreur lors de la récupération des données de l'utilisateur:",
+          error
+        );
+      }
+    };
+    getEmployeeId();
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -15,6 +37,15 @@ export default function CustomerInfo({ id }: { id: string }) {
       setCustomer(data);
       setLoading(false);
     });
+  }, [id]);
+
+  useEffect(() => {
+    const getVisit = async () => {
+      const visit = await getVisitById(id);
+      setVisit(visit);
+      console.log(visit);
+    };
+    getVisit();
   }, [id]);
 
   if (loading) {
@@ -32,77 +63,81 @@ export default function CustomerInfo({ id }: { id: string }) {
       </View>
     );
   }
-
   const handleStartVisit = async () => {
     try {
-      // Demander la permission de géolocalisation
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission refusée",
-          "La géolocalisation est nécessaire pour commencer la visite"
-        );
-        return;
-      }
-
-      // Obtenir la position actuelle
-      const location = await Location.getCurrentPositionAsync({});
-      const commercialLocation = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-
-      // Calculer la distance entre le commercial et le client
-      const distance = calculateDistance(
-        commercialLocation.latitude,
-        commercialLocation.longitude,
-        customer.latitude,
-        customer.longitude
+      const visitAlreadyExists = await getAllVisits().then((data) =>
+        data.find(
+          (visit: { customer_id: string }) => visit.customer_id === customer.id
+        )
       );
 
-      // Vérifier si le commercial est assez proche (par exemple, dans un rayon de 100 mètres)
-      const MAX_DISTANCE = 0.1; // 100 mètres en kilomètres
-      if (distance > MAX_DISTANCE) {
+      if (visitAlreadyExists) {
+        Alert.alert("Erreur", "Une visite existe déjà pour ce client");
+        return;
+      }
+
+      if (!employeeId) {
+        console.error("ID de l'employé non disponible");
         Alert.alert(
-          "Trop loin",
-          `Vous êtes à ${Math.round(
-            distance * 1000
-          )} mètres du client. Veuillez vous rapprocher.`
+          "Erreur",
+          "Impossible de récupérer les informations de l'employé"
         );
         return;
       }
 
-      // Si tout est ok, commencer la visite
-      // ... votre code pour commencer la visite ...
+      const location = await getCurrentLocation(customer);
+
+      if (location === undefined) {
+        return;
+      }
+
+      const token = await AuthService.getToken();
+
+      console.log("Employee ID:", employeeId);
+      console.log("Customer ID:", id);
+
+      const visitData = {
+        customer_id: id,
+        employee_id: employeeId,
+        status: "Etude en cours",
+      };
+
+      console.log("Sending visit data:", visitData);
+
+      const response = await fetch(
+        `${Constants.expoConfig?.extra?.SERVER_URL}/visit`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(visitData),
+        }
+      );
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        throw new Error(
+          `Erreur lors de la création de la visite: ${responseText}`
+        );
+      }
+
+      const createdVisit = JSON.parse(responseText);
+      console.log("Visit created:", createdVisit);
+
+      router.push({
+        pathname: "/customer/visit",
+        params: {
+          customerId: id,
+          visitId: createdVisit.id,
+        },
+      });
     } catch (error) {
-      console.error("Erreur de géolocalisation:", error);
-      Alert.alert("Erreur", "Impossible d'obtenir votre position");
+      console.error("Erreur complète:", error);
+      Alert.alert("Erreur", "Impossible de commencer la visite");
     }
-  };
-
-  // Fonction pour calculer la distance entre deux points (formule de Haversine)
-  const calculateDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number => {
-    const R = 6371; // Rayon de la Terre en km
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) *
-        Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c; // Distance en km
-    return distance;
-  };
-
-  const toRad = (value: number): number => {
-    return (value * Math.PI) / 180;
   };
 
   return (
@@ -127,6 +162,9 @@ export default function CustomerInfo({ id }: { id: string }) {
       <View style={styles.infoContainer}>
         <Text style={styles.label}>Code postal:</Text>
         <Text style={styles.value}>{customer.zipcode}</Text>
+      </View>
+      <View style={styles.infoContainer}>
+        <Text style={styles.label}>Statut: {visit?.status}</Text>
       </View>
       <TouchableOpacity style={styles.button} onPress={handleStartVisit}>
         <Text style={styles.buttonText}>Commencer la visite</Text>
