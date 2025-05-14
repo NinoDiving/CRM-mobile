@@ -16,14 +16,14 @@ export class CustomerController {
     return this.customerService.getCustomers();
   }
 
+  @Get('search')
+  findByName(@Query('name') name: string) {
+    return this.customerService.findByName(name);
+  }
+
   @Get(':id')
   getCustomerById(@Param('id') id: string) {
     return this.customerService.getCustomerById(id);
-  }
-
-  @Get('name')
-  findByName(@Query('name') name: string) {
-    return this.customerService.findByName(name);
   }
 
   @Get('employee/:employeeId')
