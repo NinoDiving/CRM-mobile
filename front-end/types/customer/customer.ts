@@ -6,6 +6,8 @@ export type Customer = {
   address: string;
   city: string;
   zipcode: string;
+  latitude: number;
+  longitude: number;
   employee_affected: {
     firstname: string;
     lastname: string;

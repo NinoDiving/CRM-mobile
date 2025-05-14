@@ -1,5 +1,9 @@
 import SearchBar from "@/components/searchBar/searchBar";
-import { fetchCustomers } from "@/service/customer/fetchCustomer";
+import { AuthService } from "@/service/auth/auth.service";
+import {
+  fetchCustomers,
+  fetchCustomersByEmployeeId,
+} from "@/service/customer/fetchCustomer";
 import { Customer } from "@/types/customer/customer";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -15,11 +19,15 @@ import {
 export default function HomeEmployee() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-
   useEffect(() => {
-    fetchCustomers().then((data) => {
-      setCustomers(data);
-    });
+    const fetchCustomersByEmployee = async () => {
+      const employee = await AuthService.getUserData();
+      fetchCustomersByEmployeeId(employee.id).then((data) => {
+        setCustomers(data);
+        console.log(data);
+      });
+    };
+    fetchCustomersByEmployee();
   }, []);
 
   const onRefresh = React.useCallback(() => {
@@ -28,6 +36,10 @@ export default function HomeEmployee() {
       setCustomers(data);
     });
   }, []);
+
+  const handleSearchResults = (results: Customer[]) => {
+    setCustomers(results);
+  };
 
   const renderCustomerItem = ({ item }: { item: Customer }) => (
     <TouchableOpacity
@@ -68,7 +80,7 @@ export default function HomeEmployee() {
       <View style={styles.header}>
         <Text style={styles.title}>Gestion des Clients</Text>
       </View>
-      <SearchBar />
+      <SearchBar onSearchResults={handleSearchResults} />
 
       <FlatList
         data={customers}

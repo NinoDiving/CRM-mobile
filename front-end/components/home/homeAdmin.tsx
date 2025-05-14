@@ -26,12 +26,14 @@ type Customer = {
 
 export default function HomeAdmin() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [displayedCustomers, setDisplayedCustomers] = useState<Customer[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     fetchCustomers().then((data) => {
       setCustomers(data);
+      setDisplayedCustomers(data);
     });
   }, []);
 
@@ -39,8 +41,14 @@ export default function HomeAdmin() {
     setRefreshing(true);
     fetchCustomers().then((data) => {
       setCustomers(data);
+      setDisplayedCustomers(data);
+      setRefreshing(false);
     });
   }, []);
+
+  const handleSearchResults = (results: Customer[]) => {
+    setDisplayedCustomers(results);
+  };
 
   const renderCustomerItem = ({ item }: { item: Customer }) => (
     <TouchableOpacity
@@ -86,11 +94,17 @@ export default function HomeAdmin() {
         >
           <Text style={styles.addButtonText}>Ajouter un client</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => router.push("/employee/createEmployee")}
+        >
+          <Text style={styles.addButtonText}>Ajouter un employé</Text>
+        </TouchableOpacity>
       </View>
-      <SearchBar />
+      <SearchBar onSearchResults={handleSearchResults} />
 
       <FlatList
-        data={customers}
+        data={displayedCustomers}
         renderItem={renderCustomerItem}
         keyExtractor={(item) => item.id}
         refreshControl={
