@@ -1,6 +1,6 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CreateEmployeeDto } from '../employee/dto/createEmployee.dto';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
@@ -13,14 +13,16 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
-    const employee = await this.authService.validateEmployee(
-      body.email,
-      body.password,
-    );
+    return this.authService.login(body.email, body.password);
+  }
 
-    const { access_token } = await this.authService.login(employee);
+  @Post('logout')
+  logout() {
+    return this.authService.logout();
+  }
 
-    console.log(access_token);
-    return { access_token, employee, message: 'Logged in successfully' };
+  @Get('session')
+  getSession() {
+    return this.authService.getSession();
   }
 }

@@ -1,26 +1,35 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose/dist/mongoose.module';
+import { createClient } from '@supabase/supabase-js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
+  ],
+  providers: [
+    {
+      provide: 'SUPABASE_CLIENT',
       useFactory: (configService: ConfigService) => {
-        const uri = configService.get<string>('MONGODB_URI');
-        if (!uri) {
-          throw new Error('MONGODB_URI environment variable is not defined');
+        const supabaseUrl = configService.get<string>(
+          'EXPO_PUBLIC_SUPABASE_URL',
+        );
+        const supabaseKey = configService.get<string>(
+          'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+        );
+
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error(
+            'SUPABASE_URL and SUPABASE_KEY environment variables are required',
+          );
         }
-        return {
-          uri,
-          dbName: 'crm_mobile',
-        };
+
+        return createClient(supabaseUrl, supabaseKey);
       },
       inject: [ConfigService],
-    }),
+    },
   ],
+  exports: ['SUPABASE_CLIENT'],
 })
 export class DatabaseModule {}
