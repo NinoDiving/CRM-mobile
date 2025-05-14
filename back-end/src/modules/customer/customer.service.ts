@@ -1,25 +1,75 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Customer } from './customer.schema';
+import { Inject, Injectable } from '@nestjs/common';
+import { PostgrestResponse, SupabaseClient } from '@supabase/supabase-js';
+
+import { Customer } from 'src/types/customer/customer';
 import { CustomerDto } from './dto/customer.dto';
 
 @Injectable()
 export class CustomerService {
   constructor(
-    @InjectModel(Customer.name) private customerModel: Model<Customer>,
+    @Inject('SUPABASE_CLIENT')
+    private readonly supabase: SupabaseClient,
   ) {}
 
   async createCustomer(customerDto: CustomerDto) {
-    const customer = await this.customerModel.create(customerDto);
-    return customer;
+    const { data, error }: PostgrestResponse<Customer> = await this.supabase
+      .from('customers')
+      .insert([customerDto])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   async getCustomers() {
-    const customers = await this.customerModel
-      .find()
-      .populate('employeeAffected', 'firstname lastname email')
-      .exec();
-    return customers;
+    const { data, error }: PostgrestResponse<Customer> =
+      await this.supabase.from('customers').select(`
+        *,
+        employee_affected:employees (
+          firstname,
+          lastname
+        )
+      `);
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getCustomerById(id: string) {
+    const { data, error }: PostgrestResponse<Customer> = await this.supabase
+      .from('customers')
+      .select(
+        `
+        *,
+        employee_affected:employees (
+          firstname,
+          lastname
+        )
+      `,
+      )
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+  async findByName(name: string) {
+    const { data, error }: PostgrestResponse<Customer> = await this.supabase
+      .from('customers')
+      .select('*')
+      .or(`fullname.ilike.%${name}%`);
+
+    if (error) throw error;
+    return data;
+  }
+  async findByEmployee(employeeId: string) {
+    const { data, error }: PostgrestResponse<Customer> = await this.supabase
+      .from('customers')
+      .select('*')
+      .eq('employee_affected', employeeId);
+
+    if (error) throw error;
+    return data;
   }
 }

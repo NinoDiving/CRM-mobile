@@ -1,11 +1,15 @@
-import { Request } from 'express';
-import { JwtPayload } from '../jwt/payload';
-
-export enum UserRole {
-  ADMIN = 'admin',
-  COMMERCIAL = 'commercial',
-}
-
-export interface RequestWithUser extends Request {
-  user?: JwtPayload;
-}
+export type Employee = {
+  id: string;
+  lastname: string;
+  firstname: string;
+  email: string;
+  password: string;
+  role: 'admin' | 'commercial';
+  created_at?: string;
+  updated_at?: string;
+};
+export type UserMetadata = {
+  firstname: string;
+  lastname: string;
+  role: string;
+};

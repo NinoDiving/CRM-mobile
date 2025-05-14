@@ -17,7 +17,7 @@ export class CustomerDto {
   city: string;
 
   @IsString()
-  zipCode: string;
+  zipcode: string;
 
   @IsString()
   latitude: string;
@@ -26,5 +26,5 @@ export class CustomerDto {
   longitude: string;
 
   @IsMongoId()
-  employeeAffected: string;
+  employee_affected: string;
 }
