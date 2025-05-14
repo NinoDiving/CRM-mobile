@@ -66,7 +66,7 @@ export class CustomerService {
   async findByEmployee(employeeId: string) {
     const { data, error }: PostgrestResponse<Customer> = await this.supabase
       .from('customers')
-      .select('*')
+      .select('* , employee_affected:employees(firstname, lastname)')
       .eq('employee_affected', employeeId);
 
     if (error) throw error;

@@ -30,3 +30,16 @@ export const fetchCustomers = async () => {
     console.error("Erreur lors de la récupération des clients:", error);
   }
 };
+
+export const fetchCustomersByEmployeeId = async (id: string) => {
+  const token = await AuthService.getToken();
+  const response = await fetch(
+    `${Constants.expoConfig?.extra?.SERVER_URL}/customer/employee/${id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.json();
+};

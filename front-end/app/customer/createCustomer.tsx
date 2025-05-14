@@ -1,5 +1,5 @@
 import CreateCustomerForm from "@/components/form/createCustomerForm";
 
-export default function CreateCustomer() {
+export default function CreateCustomerScreen() {
   return <CreateCustomerForm />;
 }

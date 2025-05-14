@@ -3,17 +3,19 @@ import Constants from "expo-constants";
 import { useState } from "react";
 import { Button, StyleSheet, TextInput, View } from "react-native";
 
-export default function SearchBar() {
+type SearchBarProps = {
+  onSearchResults: (results: any[]) => void;
+};
+
+export default function SearchBar({ onSearchResults }: SearchBarProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
 
   const handleSearch = async () => {
     try {
       const token = await AuthService.getToken();
       console.log("Token:", token);
 
-      const url = `${Constants.expoConfig?.extra?.SERVER_URL}/customer/name?name=${searchTerm}`;
-      console.log("URL:", url);
+      const url = `${Constants.expoConfig?.extra?.SERVER_URL}/customer/search?name=${searchTerm}`;
 
       const response = await fetch(url, {
         headers: {
@@ -21,19 +23,17 @@ export default function SearchBar() {
         },
       });
 
-      console.log("Status:", response.status);
       const responseText = await response.text();
-      console.log("Response text:", responseText);
 
       if (responseText) {
         const data = JSON.parse(responseText);
-        setSearchResults(data);
-        console.log("Parsed data:", data);
+        onSearchResults(data);
       } else {
-        console.log("Empty response");
+        onSearchResults([]);
       }
     } catch (error) {
       console.error("Erreur détaillée:", error);
+      onSearchResults([]);
     }
   };
 
