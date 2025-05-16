@@ -1,17 +1,30 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { AdminAuthorizationGuard } from 'src/middleware/adminAuthorization.guard';
+import { AuthGuard } from 'src/middleware/verifyToken.guard';
 import { CustomerService } from './customer.service';
 import { CustomerDto } from './dto/customer.dto';
 
 @Controller('customer')
+@UseGuards(AuthGuard)
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
   @Post()
+  @UseGuards(AdminAuthorizationGuard)
   createCustomer(@Body() customerdto: CustomerDto) {
     return this.customerService.createCustomer(customerdto);
   }
 
   @Get()
+  @UseGuards(AdminAuthorizationGuard)
   getCustomers() {
     return this.customerService.getCustomers();
   }

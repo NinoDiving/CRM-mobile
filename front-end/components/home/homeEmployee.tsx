@@ -1,12 +1,9 @@
 import SearchBar from "@/components/searchBar/searchBar";
 import { AuthService } from "@/service/auth/auth.service";
-import {
-  fetchCustomers,
-  fetchCustomersByEmployeeId,
-} from "@/service/customer/fetchCustomer";
+import { fetchCustomersByEmployeeId } from "@/service/customer/fetchCustomer";
 import { Customer } from "@/types/customer/customer";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   RefreshControl,
@@ -19,23 +16,27 @@ import {
 export default function HomeEmployee() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [employeeId, setEmployeeId] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchCustomersByEmployee = async () => {
       const employee = await AuthService.getUserData();
+      setEmployeeId(employee.id);
       fetchCustomersByEmployeeId(employee.id).then((data) => {
         setCustomers(data);
-        console.log(data);
       });
     };
     fetchCustomersByEmployee();
   }, []);
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    fetchCustomers().then((data) => {
+    if (employeeId) {
+      const data = await fetchCustomersByEmployeeId(employeeId);
       setCustomers(data);
-    });
-  }, []);
+    }
+    setRefreshing(false);
+  }, [employeeId]);
 
   const handleSearchResults = (results: Customer[]) => {
     setCustomers(results);
