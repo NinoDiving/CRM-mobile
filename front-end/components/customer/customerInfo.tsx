@@ -64,7 +64,7 @@ export default function CustomerInfo({ id }: { id: string }) {
       }
     };
     getDocuments();
-  }, [visit]);
+  }, [visit, documents]);
 
   if (loading) {
     return (
