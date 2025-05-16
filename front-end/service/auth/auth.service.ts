@@ -29,6 +29,7 @@ export const AuthService = {
   async getUserData() {
     try {
       const userData = await AsyncStorage.getItem(USER_KEY);
+      console.log(userData);
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
       console.error(

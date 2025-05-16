@@ -1,21 +1,30 @@
-import { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-
-import { fetchCustomerById } from "@/service/customer/fetchCustomer";
-
 import { AuthService } from "@/service/auth/auth.service";
+import { fetchCustomerById } from "@/service/customer/fetchCustomer";
+import { fetchDocumentsByVisitId } from "@/service/documents/documents";
 import { getCurrentLocation } from "@/service/localisation/localisation";
-import { getAllVisits, getVisitById } from "@/service/visit/visit";
+import { getAllVisits, getVisitByCustomerId } from "@/service/visit/visit";
 import { Customer } from "@/types/customer/customer";
-
+import { Documents } from "@/types/documents/documents";
+import { Visit, VisitStatus } from "@/types/visit/visit";
 import Constants from "expo-constants";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function CustomerInfo({ id }: { id: string }) {
   const [customer, setCustomer] = useState<Customer>();
   const [loading, setLoading] = useState(true);
   const [employeeId, setEmployeeId] = useState<string>();
-  const [visit, setVisit] = useState();
+  const [visit, setVisit] = useState<Visit>();
+  const [documents, setDocuments] = useState<Documents[]>([]);
   useEffect(() => {
     const getEmployeeId = async () => {
       try {
@@ -41,12 +50,21 @@ export default function CustomerInfo({ id }: { id: string }) {
 
   useEffect(() => {
     const getVisit = async () => {
-      const visit = await getVisitById(id);
+      const visit = await getVisitByCustomerId(id);
       setVisit(visit);
-      console.log(visit);
     };
     getVisit();
   }, [id]);
+
+  useEffect(() => {
+    const getDocuments = async () => {
+      if (visit?.id) {
+        const documents = await fetchDocumentsByVisitId(visit.id);
+        setDocuments(documents);
+      }
+    };
+    getDocuments();
+  }, [visit]);
 
   if (loading) {
     return (
@@ -93,16 +111,11 @@ export default function CustomerInfo({ id }: { id: string }) {
 
       const token = await AuthService.getToken();
 
-      console.log("Employee ID:", employeeId);
-      console.log("Customer ID:", id);
-
       const visitData = {
         customer_id: id,
         employee_id: employeeId,
         status: "Etude en cours",
       };
-
-      console.log("Sending visit data:", visitData);
 
       const response = await fetch(
         `${Constants.expoConfig?.extra?.SERVER_URL}/visit`,
@@ -125,7 +138,6 @@ export default function CustomerInfo({ id }: { id: string }) {
       }
 
       const createdVisit = JSON.parse(responseText);
-      console.log("Visit created:", createdVisit);
 
       router.push({
         pathname: "/customer/visit",
@@ -140,36 +152,93 @@ export default function CustomerInfo({ id }: { id: string }) {
     }
   };
 
+  const documentType = {
+    id_card: "Carte identité",
+    property_tax: "Taxe foncière",
+    tax_notice: "Avis d'impôt",
+    proof_of_address: "Preuve de domicile",
+    edf_bill: "Facture EDF",
+    payslip: "Bulletin de paie",
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{customer.fullname}</Text>
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Email:</Text>
-        <Text style={styles.value}>{customer.email}</Text>
+    <ScrollView>
+      <View style={styles.container}>
+        <Text style={styles.title}>{customer.fullname}</Text>
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Email:</Text>
+          <Text style={styles.value}>{customer.email}</Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Téléphone:</Text>
+          <Text style={styles.value}>{customer.phone}</Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Adresse:</Text>
+          <Text style={styles.value}>{customer.address}</Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Ville:</Text>
+          <Text style={styles.value}>{customer.city}</Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Code postal:</Text>
+          <Text style={styles.value}>{customer.zipcode}</Text>
+        </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Statut:</Text>
+          <Text style={styles.value}>
+            {visit?.status ? visit?.status : VisitStatus.CONFIRMED}
+          </Text>
+          <Text style={styles.label}>Documents:</Text>
+          {documents.length > 0 ? (
+            documents.map((doc) => (
+              <View key={doc.id} style={styles.documentContainer}>
+                <Text style={styles.value}>
+                  {documentType[doc.type as keyof typeof documentType]}
+                </Text>
+                <Image
+                  source={{ uri: doc.uri }}
+                  style={styles.documentImage}
+                  resizeMode="contain"
+                />
+                <Text style={styles.value}>
+                  Date: {new Date(doc.created_at).toLocaleDateString()}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.value}>Aucun document</Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleStartVisit}
+          disabled={visit?.status !== VisitStatus.CONFIRMED}
+        >
+          <Text style={styles.buttonText}>
+            {visit?.status === undefined ||
+            visit?.status === VisitStatus.CONFIRMED ? (
+              "Commencer la visite"
+            ) : (
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>Valider les documents</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>Ajouter un documents</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>
+                    Demander une deuxième visite
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Text>
+        </TouchableOpacity>
       </View>
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Téléphone:</Text>
-        <Text style={styles.value}>{customer.phone}</Text>
-      </View>
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Adresse:</Text>
-        <Text style={styles.value}>{customer.address}</Text>
-      </View>
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Ville:</Text>
-        <Text style={styles.value}>{customer.city}</Text>
-      </View>
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Code postal:</Text>
-        <Text style={styles.value}>{customer.zipcode}</Text>
-      </View>
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Statut: {visit?.status}</Text>
-      </View>
-      <TouchableOpacity style={styles.button} onPress={handleStartVisit}>
-        <Text style={styles.buttonText}>Commencer la visite</Text>
-      </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -189,10 +258,10 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     color: "#666",
-    marginBottom: 4,
   },
   value: {
     fontSize: 16,
+    marginBottom: 10,
   },
   button: {
     backgroundColor: "#000",
@@ -202,5 +271,24 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 16,
+    textAlign: "center",
+  },
+  documentContainer: {
+    marginTop: 8,
+    padding: 20,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 8,
+    alignItems: "center",
+    gap: 10,
+  },
+  documentImage: {
+    width: 300,
+    height: 300,
+    marginVertical: 8,
+    borderRadius: 8,
+  },
+  buttonContainer: {
+    flexDirection: "column",
+    gap: 20,
   },
 });

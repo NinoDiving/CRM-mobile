@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -191,6 +191,9 @@ export default function VisitCustomerForm() {
         }
 
         Alert.alert("Succès", "Les documents ont été envoyés avec succès");
+        router.push({
+          pathname: "/home",
+        });
       } catch (error) {
         console.error("Erreur complète:", error);
         Alert.alert("Erreur", "Impossible d'envoyer les documents");
