@@ -1,8 +1,19 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
+import { AdminAuthorizationGuard } from 'src/middleware/adminAuthorization.guard';
+import { AuthGuard } from 'src/middleware/verifyToken.guard';
 import { CreateVisitDto } from './dto/visit.dto';
 import { VisitService } from './visit.service';
 
 @Controller('visit')
+@UseGuards(AuthGuard)
 export class VisitController {
   constructor(private readonly visitService: VisitService) {}
 
@@ -12,6 +23,7 @@ export class VisitController {
   }
 
   @Get()
+  @UseGuards(AdminAuthorizationGuard)
   getAllVisits() {
     return this.visitService.getAllVisits();
   }
